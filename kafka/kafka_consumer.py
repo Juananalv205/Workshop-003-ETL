@@ -7,82 +7,85 @@ import psycopg2
 from kafka import KafkaConsumer
 from joblib import load
 import os
-from dotenv import load_dotenv  # Importamos para cargar el archivo .env
+from dotenv import load_dotenv  # To load environment variables from a .env file
 
-# Cargar las variables de entorno desde el archivo .env
+# Load environment variables from the .env file
 load_dotenv()
 
-# Cargar el modelo entrenado
+# Load the trained model
 model_path = os.path.join(os.path.dirname(__file__), '../models/svr_model_cross_val.pkl')
 model = load(model_path)
-print("Modelo cargado exitosamente.")
+print("Model loaded successfully.")
 
-# Cargar el escalador entrenado
+# Load the trained scaler
 scaler_path = os.path.join(os.path.dirname(__file__), '../models/scaler.pkl')
 scaler = load(scaler_path)
-print("Escalador cargado exitosamente.")
+print("Scaler loaded successfully.")
 
-# Conexión a la base de datos PostgreSQL utilizando las variables de entorno
+# Connect to the PostgreSQL database using environment variables
 try:
     conn = psycopg2.connect(
-        dbname=os.getenv('DB_NAME'),       # Nombre de tu base de datos
-        user=os.getenv('DB_USER'),         # Usuario de la base de datos
-        password=os.getenv('DB_PASSWORD'), # Contraseña de la base de datos
-        host=os.getenv('DB_HOST'),         # Dirección del servidor PostgreSQL (localhost si está local)
-        port=os.getenv('DB_PORT')          # Puerto (por defecto es 5432)
+        dbname=os.getenv('DB_NAME'),       # Database name
+        user=os.getenv('DB_USER'),         # Database user
+        password=os.getenv('DB_PASSWORD'), # Database password
+        host=os.getenv('DB_HOST'),         # PostgreSQL server address (localhost if local)
+        port=5432                          # Port (default is 5432)
     )
     cursor = conn.cursor()
-    print("Conexión a la base de datos establecida.")
+    print("Database connection established.")
 except Exception as e:
-    print(f"Error al conectar a la base de datos: {e}")
+    print(f"Error connecting to the database: {e}")
     exit()
 
-# Configuración del consumidor de Kafka
+# Configure the Kafka consumer
 consumer = KafkaConsumer('predict-happiness', bootstrap_servers='localhost:9092',
-                        value_deserializer=lambda m: m.decode('utf-8'),
-                        consumer_timeout_ms=5000,
-                        auto_offset_reset='earliest',
-                        enable_auto_commit=True)
+                         value_deserializer=lambda m: m.decode('utf-8'),
+                         consumer_timeout_ms=5000,
+                         auto_offset_reset='earliest',
+                         enable_auto_commit=True)
 
-print("Esperando mensajes de Kafka...")
+print("Waiting for messages from Kafka...")
 
 for message in consumer:
-    # Extraer contenido del mensaje
+    # Extract and parse the received message from Kafka
     data = message.value
-
-    # Convertir el mensaje en un DataFrame
-    df = pd.DataFrame([data])
-
-    # Seleccionar las columnas necesarias para el modelo en el orden correcto
-    feature_order = [
-        'economy_GDP_per_capita',
-        'family',
-        'health_life_expectancy',
-        'freedom',
-        'government_corruption',
-        'generosity',
-        'year'
-    ]
+    print(f"Message received: {data}")
     
     try:
-        # Seleccionar y reordenar las columnas necesarias
-        df_features = df[feature_order]
+        # Parse the JSON message into a dictionary
+        parsed_data = json.loads(data)  # Convert the JSON to a dictionary
+        
+        # Create a DataFrame from the dictionary
+        df = pd.DataFrame([parsed_data])
 
-        # Escalar las características utilizando el mismo escalador
+        # Check that all required columns are present
+        feature_order = [
+            'economy_GDP_per_capita',
+            'family',
+            'health_life_expectancy',
+            'freedom',
+            'government_corruption',
+            'generosity',
+            'year'
+        ]
+        missing_columns = [col for col in feature_order if col not in df.columns]
+        if missing_columns:
+            logging.error(f"Missing required columns in the message: {missing_columns}")
+            continue  # Skip this message if columns are missing
+        
+        # Select and scale the features
+        df_features = df[feature_order]
         X_scaled = scaler.transform(df_features.values)
         
-        # Realizar predicción
+        # Make the prediction
         predicted_happiness = model.predict(X_scaled)
-        
-        # Añadir la predicción como una nueva columna
         df['happiness_score'] = predicted_happiness
-        print(f"Predicción realizada: {predicted_happiness}")
-        
-        # Insertar los resultados en la base de datos PostgreSQL
+
+        # Insert the results into the PostgreSQL database
         for index, row in df.iterrows():
-            # Definir la consulta SQL para insertar los datos
+            # SQL query to insert the data
             insert_query = """
-            INSERT INTO happiness_predictions (happiness_rank, country, region, 
+            INSERT INTO happiness_data (happiness_rank, country, region, 
                                                 economy_GDP_per_capita, family, 
                                                 health_life_expectancy, freedom, 
                                                 government_corruption, generosity, 
@@ -90,7 +93,7 @@ for message in consumer:
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
             """
             
-            # Ejecutar la inserción de los datos en la base de datos
+            # Execute the query to insert the data
             cursor.execute(insert_query, (
                 row['happiness_rank'],
                 row['country'],
@@ -105,18 +108,19 @@ for message in consumer:
                 row['happiness_score']
             ))
 
-        # Confirmar los cambios en la base de datos
+        # Commit the changes to the database
         conn.commit()
-        print("Datos insertados correctamente en la base de datos.")
+        print("Data successfully inserted into the database.")
 
-    except Exception as e:
-        logging.error(f"Error {e}")
-        
+    except json.JSONDecodeError as e:
+        logging.error(f"Failed to decode the JSON: {e}")
     except KeyError as e:
-        logging.error(f"Error procesando mensaje. Faltan columnas necesarias: {e}")
+        logging.error(f"Missing required keys in the message: {e}")
+    except Exception as e:
+        logging.error(f"Unexpected error: {e}")
 
-# Cerrar la conexión cuando ya no sea necesario
-print("Fin del consumo de mensajes.")
+# Close the connections
+print("Message consumption finished.")
 consumer.close()
 cursor.close()
 conn.close()
