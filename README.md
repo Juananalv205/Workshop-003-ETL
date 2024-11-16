@@ -1,16 +1,21 @@
-Happiness Index Prediction Analysis 🌍😊
+# Happiness Index Prediction Analysis 🌍😊
 This project aims to predict the happiness index of different countries using a Support Vector Regression (SVR) model. The data used for this analysis includes economic, health, and social indicators from several countries. The workflow involves data loading, model training, feature scaling, hyperparameter optimization, and integration with Kafka for sending and receiving predictions.
+---
 
-📦 Technologies Used
-Python 🐍
-Scikit-learn 📊
-Kafka ☕
-PostgreSQL 🗄️
-Pandas 📑
-Joblib 📦
-dotenv 🌱
-Docker Compose 🐳
-🛠️ Workflow
+## 📦 Technologies Used
+- Python 🐍
+- Scikit-learn 📊
+- Kafka ☕
+- PostgreSQL 🗄️
+- Pandas 📑
+- Joblib 📦
+- dotenv 🌱
+- Docker Compose 🐳
+
+---
+
+## 🛠️ Workflow
+
 Data Loading and Preparation 📥
 
 Data was loaded from the happiness_dataset.csv dataset.
@@ -37,7 +42,10 @@ Scaler: The scaler used to normalize features before making predictions was trai
 PostgreSQL Database 🗄️
 
 A PostgreSQL database was set up to store happiness predictions along with the features of each country.
-⚙️ Steps to Run the Project
+---
+
+
+## ⚙️ Steps to Run the Project
 Install Dependencies 🔧 Ensure you have Python 3.8 or higher and the following libraries installed:
 
 ```
@@ -52,11 +60,15 @@ DB_PASSWORD=your_password
 DB_HOST=localhost
 ```
 
-Start the Kafka Container with Docker Compose 🐳 To start the Kafka and Zookeeper containers, use the following command:
+Start the Kafka Container with Docker Compose 🐳 
+
+To start the Kafka and Zookeeper containers, use the following command:
 
 ```
-docker-compose up --build
+docker-compose up --build -d
 ```
+- ![contenedor activado]('docs/img/img1.PNG')
+
 
 Access the Kafka Container 🖥️ Once the Kafka container is up, access it to create topics and manage configurations:
 
@@ -69,6 +81,8 @@ Create the Kafka Topic 📝 Inside the Kafka container, create the topic where d
 ```
 kafka-topics.sh --create --topic predict-happiness --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
 ```
+- ![topic creado]('docs/img/img2.PNG')
+
 
 Run the Kafka Producer 📤 The producer will send data to the Kafka server:
 
@@ -81,18 +95,31 @@ Run the Kafka Consumer 📥 The consumer will listen to Kafka messages, make pre
 ```
 python consumer.py
 ```
+- ![Streaming de datos]('docs/img/img3.PNG')
 
-🚀 Model Improvements
+Before:
+
+- ![Table before]('docs/img/img4.PNG')
+
+After:
+
+- ![Table after]('docs/img/img5.PNG')
+
+If you would like to see how the data was sent in video, [click here](https://youtu.be/o4gBKe9bsi0)
+
+
+## 🚀 Model Improvements
 Feature Scaling: StandardScaler was used to normalize the data before passing it to the model.
 Hyperparameter Optimization: Hyperparameters were tuned using Grid Search and Randomized Search to improve model accuracy.
 Standardization: Standardization was applied to ensure the features had comparable scales.
-🎯 Results
+
+## 🎯 Results
 The final model achieved an R² of 83.21%, meaning that the happiness index predictions were quite accurate. Performance was evaluated through cross-validation, and advanced techniques were used to optimize the model’s hyperparameters.
 
-🔄 Model and Scaler Export
+## 🔄 Model and Scaler Export
 Both the model and the scaler were successfully exported as .pkl files for later use in a production environment.
 
-📝 Conclusion
+## 📝 Conclusion
 This project demonstrates how to combine machine learning techniques, Kafka, and databases to create an efficient and scalable workflow for predicting indices, in this case, the world happiness index. The optimizations made to the model ensure that the predictions are as accurate as possible.
 
 Thanks for checking out this project! 😊
