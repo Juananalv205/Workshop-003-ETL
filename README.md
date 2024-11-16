@@ -67,7 +67,7 @@ To start the Kafka and Zookeeper containers, use the following command:
 ```
 docker-compose up --build -d
 ```
-- ![contenedor activado]('docs/img/img1.PNG')
+- ![contenedor activado](docs/img/img1.PNG)
 
 
 Access the Kafka Container 🖥️ Once the Kafka container is up, access it to create topics and manage configurations:
@@ -81,7 +81,7 @@ Create the Kafka Topic 📝 Inside the Kafka container, create the topic where d
 ```
 kafka-topics.sh --create --topic predict-happiness --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
 ```
-- ![topic creado]('docs/img/img2.PNG')
+- ![topic creado](docs/img/img2.PNG)
 
 
 Run the Kafka Producer 📤 The producer will send data to the Kafka server:
@@ -95,17 +95,17 @@ Run the Kafka Consumer 📥 The consumer will listen to Kafka messages, make pre
 ```
 python consumer.py
 ```
-- ![Streaming de datos]('docs/img/img3.PNG')
+- ![Streaming de datos](docs/img/img3.PNG)
 
 Before:
 
-- ![Table before]('docs/img/img4.PNG')
+- ![Table before](docs/img/img4.PNG)
 
 After:
 
-- ![Table after]('docs/img/img5.PNG')
+- ![Table after](docs/img/img5.PNG)
 
-If you would like to see how the data was sent in video, [click here](https://youtu.be/o4gBKe9bsi0)
+If you would like to see how the data was sent in video, [click here](https://drive.google.com/file/d/1xyCnR6LVnxWSuozdgLueU7MPZJXUkunA/view?usp=sharing)
 
 
 ## 🚀 Model Improvements
