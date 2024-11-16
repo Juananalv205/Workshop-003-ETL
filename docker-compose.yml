@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  zookeeper:
+    image: bitnami/zookeeper:latest
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: bitnami/kafka:latest
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+  
+  # Servicio de tu aplicación Python
+  app:
+    image: python:3.9-slim  # Usamos una imagen base de Python
+    volumes:
+      - .:/app  # Mapea el directorio actual en tu máquina al contenedor
+    working_dir: /app  # Establece el directorio de trabajo dentro del contenedor
+    command: pip install -r requirements.txt # Instala dependencias y ejecuta el script
+    depends_on:
+      - kafka  # Asegúrate de que Kafka esté disponible antes de ejecutar tu script
